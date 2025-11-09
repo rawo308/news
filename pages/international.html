@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>إقليمي ودولي — راميا نيوز</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header>
+  <nav aria-label="الرئيسي">
+    <a class="nav-link" href="highlights.html">الأخبار الهامة</a>
+    <a class="nav-link" href="urgent.html">العواجل</a>
+    <a class="nav-link" href="local.html">محليات</a>
+    <a class="nav-link" href="international.html">إقليمي ودولي</a>
+    <a class="nav-link" href="economy.html">اقتصاد</a>
+    
+    <a class="brand" href="../index.html"><span class="brand-text">RAMYAH NEWS</span></a>
+  </nav>
+</header>
+<main id="news-container" style="max-width:1100px;margin:18px auto;padding:18px"></main>
+
+<script>
+const CONTAINER = document.getElementById('news-container');
+const DATA_PATH = '../data/articles.json';
+const STORAGE_KEY = 'ramya_articles_local';
+
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+async function loadAll(){
+  const res = await fetch(DATA_PATH).catch(()=>null);
+  const fromFile = res ? await res.json().catch(()=>[]) : [];
+  const fromStorage = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const map = new Map();
+  fromFile.forEach(a=>map.set(String(a.id), a));
+  fromStorage.forEach(a=>map.set(String(a.id), a));
+  return Array.from(map.values()).sort((a,b)=> new Date(b.date) - new Date(a.date));
+}
+
+function renderList(list){
+  if(!list.length){ CONTAINER.innerHTML = '<p>لا توجد أخبار في هذا القسم.</p>'; return; }
+  const grid = document.createElement('div'); grid.className='grid';
+  list.forEach(item=>{
+    const card = document.createElement('article'); card.className='card';
+    card.innerHTML = `
+      <img src="${escapeHtml(item.image||'https://via.placeholder.com/640x360')}" alt="${escapeHtml(item.title)}">
+      <div class="body">
+        <h3><a href="article.html?id=${item.id}">${escapeHtml(item.title)}</a></h3>
+        <p>${escapeHtml(item.summary||'')}</p>
+        <div class="meta">
+          <span>${escapeHtml(item.category||'عام')}</span>
+          <span>${new Date(item.date).toLocaleString('ar-EG')}</span>
+        </div>
+      </div>
+    `;
+    if(item.breaking){
+      const badge = document.createElement('div'); badge.className='badge'; badge.textContent='عاجل';
+      card.querySelector('.body').prepend(badge);
+    }
+    grid.appendChild(card);
+  });
+  CONTAINER.innerHTML = '';
+  CONTAINER.appendChild(grid);
+}
+
+(async ()=>{
+  const all = await loadAll();
+  // قد تختلف تسمية القسم في بياناتك؛ عدّل 'إقليمي ودولي' إذا لزم
+  const filtered = all.filter(a=>String(a.category).trim() === 'إقليمي ودولي');
+  renderList(filtered);
+})();
+</script>
+</body>
+</html>

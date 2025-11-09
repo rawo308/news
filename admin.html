@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>لوحة التحكم (سري)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <nav aria-label="الرئيسي">
+    <a class="nav-link" href="pages/highlights.html">الأخبار الهامة</a>
+    <a class="nav-link" href="pages/urgent.html">العواجل</a>
+    <a class="nav-link" href="pages/local.html">محليات</a>
+    <a class="nav-link" href="pages/international.html">إقليمي ودولي</a>
+    <a class="nav-link" href="pages/economy.html">اقتصاد</a>
+    <!-- admin link intentionally NOT shown -->
+    <a class="brand" href="index.html"><span class="brand-text">RAMYAH NEWS</span></a>
+  </nav>
+</header>
+
+<main style="max-width:900px;margin:18px auto;padding:18px">
+  <div id="loginBox">
+    <h2>تسجيل الدخول</h2>
+    <form id="loginForm">
+      <div class="form-row"><label>اسم المستخدم</label><input name="username" required></div>
+      <div class="form-row"><label>كلمة المرور</label><input name="password" type="password" required></div>
+      <div class="form-row"><button class="btn" type="submit">دخول</button></div>
+      <small id="loginMsg"></small>
+    </form>
+  </div>
+
+  <div id="adminUI" style="display:none">
+    <h2>إنشاء خبر جديد</h2>
+    <form id="articleForm">
+      <div class="form-row"><label>العنوان</label><input name="title" required></div>
+      <div class="form-row"><label>القسم</label>
+        <select name="category">
+          <option>الأخبار الهامة</option>
+          <option>العواجل</option>
+          <option>محليات</option>
+          <option>إقليمي ودولي</option>
+          <option>اقتصاد</option>
+          <option selected>عام</option>
+        </select>
+      </div>
+      <div class="form-row" id="imageRow"><label>رابط الصورة (URL)</label><input name="image"></div>
+      <div class="form-row" id="summaryRow"><label>ملخص</label><textarea name="summary" rows="3"></textarea></div>
+      <div class="form-row"><label>المحتوى</label><textarea name="content" rows="6" required></textarea></div>
+      <div class="form-row"><label><input type="checkbox" name="breaking"> خبر عاجل</label></div>
+      <div class="form-row">
+        <button class="btn" type="submit">نشر إلى السيرفر</button>
+        <button class="btn" type="button" id="logoutBtn" style="background:#777;margin-right:8px">خروج</button>
+      </div>
+      <small id="msg"></small>
+    </form>
+  </div>
+</main>
+
+<script>
+const API_BASE = 'http://localhost:8000/api';
+const loginForm = document.getElementById('loginForm');
+const loginMsg = document.getElementById('loginMsg');
+const loginBox = document.getElementById('loginBox');
+const adminUI = document.getElementById('adminUI');
+const articleForm = document.getElementById('articleForm');
+const msg = document.getElementById('msg');
+const logoutBtn = document.getElementById('logoutBtn');
+
+function setToken(t){ sessionStorage.setItem('ramya_token', t); }
+function getToken(){ return sessionStorage.getItem('ramya_token'); }
+function showLoggedIn(){ loginBox.style.display='none'; adminUI.style.display='block'; }
+function showLoggedOut(){ loginBox.style.display='block'; adminUI.style.display='none'; sessionStorage.removeItem('ramya_token'); }
+
+loginForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const fd = new FormData(loginForm);
+  const body = { username: fd.get('username'), password: fd.get('password') };
+  loginMsg.textContent = '...';
+  try{
+    const res = await fetch(API_BASE + '/login', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(!res.ok) throw new Error('فشل الدخول');
+    const j = await res.json();
+    setToken(j.access_token);
+    loginMsg.textContent = 'تم الدخول';
+    showLoggedIn();
+  }catch(err){
+    loginMsg.textContent = 'خطأ في بيانات الدخول';
+  }
+});
+
+logoutBtn.addEventListener('click', ()=>{
+  showLoggedOut();
+  loginMsg.textContent = 'تم تسجيل الخروج';
+});
+
+articleForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const token = getToken();
+  if(!token){ msg.textContent='يرجى تسجيل الدخول أولاً'; return; }
+  const fd = new FormData(articleForm);
+  const payload = {
+    title: fd.get('title'),
+    category: fd.get('category'),
+    image: fd.get('image'),
+    summary: fd.get('summary'),
+    content: fd.get('content'),
+    breaking: !!fd.get('breaking')
+  };
+  msg.textContent = 'جاري النشر...';
+  try{
+    const res = await fetch(API_BASE + '/news', {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){
+      const err = await res.json().catch(()=>null);
+      throw new Error(err?.detail || 'error');
+    }
+    const created = await res.json();
+    msg.textContent = 'نشر بنجاح (id: ' + created.id + ')';
+    articleForm.reset();
+  }catch(err){
+    msg.textContent = 'فشل النشر: ' + (err.message || err);
+  }
+});
+
+// on load: if token exists, validate by attempting to fetch articles (simple check)
+(async ()=>{
+  const tok = getToken();
+  if(tok){
+    try{
+      const r = await fetch(API_BASE + '/news');
+      if(r.ok) showLoggedIn();
+    }catch(e){}
+  }
+})();
+</script>
+</body>
+</html>
