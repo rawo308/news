@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>راميا نيوز</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header>
+  <nav aria-label="الرئيسي">
+    <a class="nav-link" href="category.html?category=highlights">الأخبار الهامة</a>
+    <a class="nav-link" href="category.html?category=urgent">العواجل</a>
+    <a class="nav-link" href="category.html?category=local">محليات</a>
+    <a class="nav-link" href="category.html?category=international">إقليمي ودولي</a>
+    <a class="nav-link" href="category.html?category=economy">اقتصاد</a>
+
+    <a class="brand" href="../index.html"><span class="brand-text">RAMYAH NEWS</span></a>
+  </nav>
+</header>
+
+<main>
+  <h1 id="category-title" class="category-title"></h1>
+  <div id="news-container"></div>
+</main>
+
+<!-- Load JavaScript modules -->
+<script src="../js/utils.js"></script>
+<script src="../js/api.js"></script>
+<script>
+  // Get category from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const category = urlParams.get('category') || 'highlights';
+
+  // Set page title
+  const title = getCategoryDisplayName(category);
+  document.title = title + ' - راميا نيوز';
+  document.getElementById('category-title').textContent = title;
+
+  // Load news for this category
+  async function loadCategoryNews() {
+    showLoading();
+    try {
+      const articles = await api.getNews({ category });
+      renderNewsList(articles);
+    } catch (error) {
+      showError('حدث خطأ أثناء تحميل الأخبار');
+    }
+  }
+
+  loadCategoryNews();
+</script>
+</body>
+</html>

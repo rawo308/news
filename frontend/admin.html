@@ -8,11 +8,11 @@
 <body>
 <header>
   <nav aria-label="الرئيسي">
-    <a class="nav-link" href="pages/highlights.html">الأخبار الهامة</a>
-    <a class="nav-link" href="pages/urgent.html">العواجل</a>
-    <a class="nav-link" href="pages/local.html">محليات</a>
-    <a class="nav-link" href="pages/international.html">إقليمي ودولي</a>
-    <a class="nav-link" href="pages/economy.html">اقتصاد</a>
+    <a class="nav-link" href="pages/category.html?category=highlights">الأخبار الهامة</a>
+    <a class="nav-link" href="pages/category.html?category=urgent">العواجل</a>
+    <a class="nav-link" href="pages/category.html?category=local">محليات</a>
+    <a class="nav-link" href="pages/category.html?category=international">إقليمي ودولي</a>
+    <a class="nav-link" href="pages/category.html?category=economy">اقتصاد</a>
     <!-- admin link intentionally NOT shown -->
     <a class="brand" href="index.html"><span class="brand-text">RAMYAH NEWS</span></a>
   </nav>
@@ -35,12 +35,11 @@
       <div class="form-row"><label>العنوان</label><input name="title" required></div>
       <div class="form-row"><label>القسم</label>
         <select name="category">
-          <option>الأخبار الهامة</option>
-          <option>العواجل</option>
-          <option>محليات</option>
-          <option>إقليمي ودولي</option>
-          <option>اقتصاد</option>
-          <option selected>عام</option>
+          <option value="highlights">الأخبار الهامة</option>
+          <option value="urgent">العواجل</option>
+          <option value="local">محليات</option>
+          <option value="international">إقليمي ودولي</option>
+          <option value="economy" selected>اقتصاد</option>
         </select>
       </div>
       <div class="form-row" id="imageRow"><label>رابط الصورة (URL)</label><input name="image"></div>
@@ -56,8 +55,9 @@
   </div>
 </main>
 
+<!-- Load JavaScript modules -->
+<script src="js/api.js"></script>
 <script>
-const API_BASE = 'http://localhost:8000/api';
 const loginForm = document.getElementById('loginForm');
 const loginMsg = document.getElementById('loginMsg');
 const loginBox = document.getElementById('loginBox');
@@ -66,80 +66,71 @@ const articleForm = document.getElementById('articleForm');
 const msg = document.getElementById('msg');
 const logoutBtn = document.getElementById('logoutBtn');
 
+// Token management
 function setToken(t){ sessionStorage.setItem('ramya_token', t); }
 function getToken(){ return sessionStorage.getItem('ramya_token'); }
 function showLoggedIn(){ loginBox.style.display='none'; adminUI.style.display='block'; }
 function showLoggedOut(){ loginBox.style.display='block'; adminUI.style.display='none'; sessionStorage.removeItem('ramya_token'); }
 
+// Login form handler
 loginForm.addEventListener('submit', async e=>{
   e.preventDefault();
   const fd = new FormData(loginForm);
-  const body = { username: fd.get('username'), password: fd.get('password') };
-  loginMsg.textContent = '...';
+  loginMsg.textContent = 'جاري تسجيل الدخول...';
   try{
-    const res = await fetch(API_BASE + '/login', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify(body)
-    });
-    if(!res.ok) throw new Error('فشل الدخول');
-    const j = await res.json();
-    setToken(j.access_token);
-    loginMsg.textContent = 'تم الدخول';
+    const result = await api.login(fd.get('username'), fd.get('password'));
+    setToken(result.access_token);
+    loginMsg.textContent = 'تم الدخول بنجاح';
     showLoggedIn();
   }catch(err){
     loginMsg.textContent = 'خطأ في بيانات الدخول';
   }
 });
 
+// Logout handler
 logoutBtn.addEventListener('click', ()=>{
   showLoggedOut();
   loginMsg.textContent = 'تم تسجيل الخروج';
 });
 
+// Article creation form handler
 articleForm.addEventListener('submit', async e=>{
   e.preventDefault();
   const token = getToken();
   if(!token){ msg.textContent='يرجى تسجيل الدخول أولاً'; return; }
+
   const fd = new FormData(articleForm);
   const payload = {
     title: fd.get('title'),
     category: fd.get('category'),
-    image: fd.get('image'),
-    summary: fd.get('summary'),
+    image: fd.get('image') || null,
+    summary: fd.get('summary') || null,
     content: fd.get('content'),
     breaking: !!fd.get('breaking')
   };
+
   msg.textContent = 'جاري النشر...';
   try{
-    const res = await fetch(API_BASE + '/news', {
-      method: 'POST',
-      headers: {
-        'Content-Type':'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify(payload)
-    });
-    if(!res.ok){
-      const err = await res.json().catch(()=>null);
-      throw new Error(err?.detail || 'error');
-    }
-    const created = await res.json();
-    msg.textContent = 'نشر بنجاح (id: ' + created.id + ')';
+    const created = await api.createNews(payload, token);
+    msg.textContent = 'نشر بنجاح! (ID: ' + created.id + ') - يمكنك الآن مشاهدة الخبر في الصفحة الرئيسية';
     articleForm.reset();
   }catch(err){
-    msg.textContent = 'فشل النشر: ' + (err.message || err);
+    msg.textContent = 'فشل النشر: ' + (err.message || 'خطأ غير معروف');
   }
 });
 
-// on load: if token exists, validate by attempting to fetch articles (simple check)
+// Auto-login if token exists
 (async ()=>{
   const tok = getToken();
   if(tok){
     try{
-      const r = await fetch(API_BASE + '/news');
-      if(r.ok) showLoggedIn();
-    }catch(e){}
+      // Validate token by fetching news
+      await api.getNews();
+      showLoggedIn();
+    }catch(e){
+      // Token invalid, clear it
+      showLoggedOut();
+    }
   }
 })();
 </script>

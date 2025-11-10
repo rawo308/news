@@ -11,10 +11,10 @@ class LoginIn(BaseModel):
 
 class NewsCreate(BaseModel):
     title: str
-    category: Optional[str] = None
+    category: str
     image: Optional[str] = None
     summary: Optional[str] = None
-    content: Optional[str] = None
+    content: str
     breaking: Optional[bool] = False
     date: Optional[str] = None
 

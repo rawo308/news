@@ -3,11 +3,19 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import os
+from dotenv import load_dotenv
 
-# change SECRET_KEY in production via env
-SECRET_KEY = "change-this-secret-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60*24  # 1 day
+# Load environment variables
+load_dotenv()
+
+# Get JWT configuration from environment
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY environment variable is not set")
 
 # Use a hashing scheme that doesn't require the bcrypt C extension to avoid
 # compatibility issues on some Windows environments. pbkdf2_sha256 is secure

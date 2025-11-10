@@ -3,18 +3,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
+from dotenv import load_dotenv
 
-from .db import SessionLocal, engine, Base
-from . import models, schemas, auth
+import db
+import models
+import schemas
+import auth
+
+SessionLocal = db.SessionLocal
+engine = db.engine
+Base = db.Base
+
+# Load environment variables
+load_dotenv()
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Ramya News API")
 
-# CORS - during dev allow localhost: you can restrict later
+# CORS - Get allowed origins from environment variable
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,10 +35,13 @@ app.add_middleware(
 def init_default_admin():
     db = SessionLocal()
     try:
-        admin = db.query(models.Admin).filter(models.Admin.username == "admin123").first()
+        default_username = os.getenv("DEFAULT_ADMIN_USERNAME", "admin123")
+        default_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "rawad123")
+
+        admin = db.query(models.Admin).filter(models.Admin.username == default_username).first()
         if not admin:
-            password_hash = auth.get_password_hash("rawad123")
-            admin = models.Admin(username="admin123", password_hash=password_hash)
+            password_hash = auth.get_password_hash(default_password)
+            admin = models.Admin(username=default_username, password_hash=password_hash)
             db.add(admin)
             db.commit()
     finally:
