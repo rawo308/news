@@ -897,9 +897,8 @@ small{ color:#666 }
 
 .brand-logo{
   height:60px;
-  width:auto;
-  object-fit:contain;
-  display:block;
+  width:100px;
+  
   transition:transform 0.2s ease;
 }
 
@@ -1330,7 +1329,7 @@ small{ color:#666 }
   }
 
   .brand-logo{
-    height:50px;
+    height:100px;
   }
 
   .brand{

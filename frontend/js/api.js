@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = window.location.origin + '/api';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 // API Client
 const api = {

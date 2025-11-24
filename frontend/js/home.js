@@ -37,10 +37,10 @@ function loadUrgentNews(urgentNews) {
         const time = formatTime(item.date);
 
         return `
-            <div class="urgent-compact-item" onclick="window.location.href='pages/article.html?id=${item.id}'">
+           <div class="urgent-compact-item">
                 <h3 class="urgent-compact-title">
                     <span class="urgent-dot"></span>
-                    <a href="pages/article.html?id=${item.id}">${escapeHtml(item.title)}</a>
+                    <a href="javascript:void(0)">${escapeHtml(item.title)}</a>
                 </h3>
                 <div class="urgent-compact-date">
                     <span>${date}</span>
@@ -64,11 +64,10 @@ function loadMainNewsFeed(otherNews) {
     // Shuffle and take 6 random articles
     const shuffled = shuffleArray([...otherNews]);
     const randomNews = shuffled.slice(0, 6);
-
     // Add staggered animation delay
     container.innerHTML = randomNews.map((item, index) => {
         const imageUrl = item.image || 'ramya logo.jpg';
-        const categoryLabel = getCategoryLabel(item.category);
+const categoryLabel = `<a href="pages/category.html?cat=${encodeURIComponent(item.category)}" style="color: inherit; text-decoration: none;">${getCategoryLabel(item.category)}</a>`;
         const date = formatDate(item.date);
 
         return `
