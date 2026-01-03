@@ -1,14 +1,20 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 import db
 import models
 import schemas
 import auth
+
+# Rate limiter setup
+limiter = Limiter(key_func=get_remote_address)
 
 SessionLocal = db.SessionLocal
 engine = db.engine
@@ -21,14 +27,18 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Ramya News API")
 
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # CORS - Get allowed origins from environment variable
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # create default admin if missing
@@ -57,7 +67,8 @@ def get_db():
         db.close()
 
 @app.post("/api/login", response_model=schemas.Token)
-def login(data: schemas.LoginIn, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, data: schemas.LoginIn, db: Session = Depends(get_db)):
     user = db.query(models.Admin).filter(models.Admin.username == data.username).first()
     if not user or not auth.verify_password(data.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -65,13 +76,22 @@ def login(data: schemas.LoginIn, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer"}
 
 @app.get("/api/news", response_model=List[schemas.NewsOut])
-def get_news(category: Optional[str] = None, breaking: Optional[int] = None, db: Session = Depends(get_db)):
+def get_news(
+    category: Optional[str] = None,
+    breaking: Optional[int] = None,
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    # Cap limit to prevent abuse
+    limit = min(limit, 100)
+
     q = db.query(models.News)
     if category:
         q = q.filter(models.News.category == category)
     if breaking is not None:
         q = q.filter(models.News.breaking == bool(int(breaking)))
-    items = q.order_by(models.News.date.desc()).all()
+    items = q.order_by(models.News.date.desc()).offset(offset).limit(limit).all()
     return items
 
 @app.post("/api/news", response_model=schemas.NewsOut)

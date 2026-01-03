@@ -1,5 +1,6 @@
 // API Configuration
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+// Use relative URL - works with nginx reverse proxy in production
+const API_BASE_URL = '/api';
 
 // API Client
 const api = {
