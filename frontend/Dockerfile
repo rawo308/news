@@ -11,7 +11,7 @@ COPY nginx.conf /etc/nginx/conf.d/
 COPY index.html /usr/share/nginx/html/
 COPY admin.html /usr/share/nginx/html/
 COPY style.css /usr/share/nginx/html/
-COPY ["ramya logo.jpg", "/usr/share/nginx/html/"]
+COPY ["ramya logo.png", "/usr/share/nginx/html/"]
 
 # Copy JavaScript modules
 COPY js/ /usr/share/nginx/html/js/

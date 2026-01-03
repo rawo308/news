@@ -77,12 +77,19 @@
 <body>
 <header>
   <nav aria-label="الرئيسي">
-            <a class="nav-link" href="../index.html">الرئيسية</a>
+    <button class="burger-menu" aria-label="فتح القائمة" aria-expanded="false">
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+      <span class="burger-line"></span>
+    </button>
 
-    <a class="nav-link" href="../pages/category.html?category=highlights">الأخبار الهامة</a>
-    <a class="nav-link" href="../pages/category.html?category=local">محليات</a>
-    <a class="nav-link" href="../pages/category.html?category=international">إقليمي ودولي</a>
-    <a class="nav-link" href="../pages/category.html?category=economy">اقتصاد</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">الرئيسية</a>
+      <a class="nav-link" href="../pages/category.html?category=highlights">الأخبار الهامة</a>
+      <a class="nav-link" href="../pages/category.html?category=local">محليات</a>
+      <a class="nav-link" href="../pages/category.html?category=international">إقليمي ودولي</a>
+      <a class="nav-link" href="../pages/category.html?category=economy">اقتصاد</a>
+    </div>
 
     <a class="brand" href="../index.html">
       <img src="../ramya logo.png" alt="راميا نيوز" class="brand-logo">
@@ -181,5 +188,6 @@
   </div>
 </footer>
 
+<script src="../js/utils.js"></script>
 </body>
 </html>
