@@ -11,7 +11,7 @@ COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY frontend/index.html /usr/share/nginx/html/
 COPY frontend/admin.html /usr/share/nginx/html/
 COPY frontend/style.css /usr/share/nginx/html/
-COPY "frontend/ramya logo.png" /usr/share/nginx/html/
+COPY ["frontend/ramya logo.png", "/usr/share/nginx/html/"]
 
 # Copy JavaScript modules
 COPY frontend/js/ /usr/share/nginx/html/js/
